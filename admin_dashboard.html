@@ -5,76 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Reginald SHERQ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .sidebar { background-color: #003366; min-height: 100vh; color: white; padding-top: 20px; }
-        .nav-link { color: rgba(255,255,255,0.8); font-weight: 500; }
+        .nav-link { color: rgba(255,255,255,0.8); font-weight: 500; display: flex; align-items: center; }
+        .nav-link i { margin-right: 10px; }
         .nav-link:hover, .nav-link.active { color: #99cc33; }
-        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; }
+        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; height: 100%; }
         .stat-card:hover { transform: translateY(-5px); }
         .brand-green { color: #99cc33; }
         .table thead { background-color: #003366; color: white; }
+        .text-navy { color: #003366; }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
         <nav class="col-md-2 d-none d-md-block sidebar shadow">
             <div class="position-sticky text-center">
                 <h4 class="fw-bold mb-4">REGINALD<span class="brand-green">SHERQ</span></h4>
                 <ul class="nav flex-column text-start px-3">
                     <li class="nav-item mb-2">
-                        <a class="nav-link active" href="/admin/dashboard">📊 Dashboard</a>
+                        <a class="nav-link active" href="{{ url_for('admin_dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link" href="/register">📋 Asset Register</a>
+                        <a class="nav-link" href="{{ url_for('register') }}">
+                            <i class="bi bi-archive"></i> Asset Register
+                        </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link" href="/admin">➕ Add New Asset</a>
+                        <a class="nav-link" href="{{ url_for('inspection_register') }}">
+                            <i class="bi bi-clipboard-check"></i> Inspection Register
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="/admin/alerts">
+                            <i class="bi bi-exclamation-triangle"></i> Alerts
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="{{ url_for('employee_management') }}">
+                            <i class="bi bi-people"></i> Employee Management
+                        </a>
                     </li>
                     <hr style="border-color: rgba(255,255,255,0.1);">
                     <li class="nav-item">
-                        <a class="nav-link text-danger" href="/logout">🚪 Logout</a>
+                        <a href="#" class="nav-link text-danger" onclick="confirmLogout()">
+                            <i class="bi bi-box-arrow-left"></i> Logout
+                        </a>
                     </li>
                 </ul>
             </div>
         </nav>
 
-        <!-- Main Content -->
         <main class="col-md-10 ms-sm-auto px-md-4 py-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2 text-navy">Management Overview</h1>
-                <!-- Badge toolbar removed from here -->
+                <h1 class="h2 text-navy fw-bold">Management Overview</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print Overview
+                    </button>
+                </div>
             </div>
 
-            <!-- Stats Row -->
-            <div class="row mb-4">
-                <div class="col-md-4">
+            <div class="row mb-4 g-3">
+                <div class="col-md-3">
                     <div class="card stat-card p-3 border-start border-primary border-5">
-                        <small class="text-muted fw-bold">TOTAL INSPECTIONS</small>
+                        <small class="text-muted fw-bold text-uppercase">Total Inspections</small>
                         <h2 class="fw-bold">{{ total }}</h2>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card stat-card p-3 border-start border-success border-5">
-                        <small class="text-muted fw-bold">COMPLETED TODAY</small>
-                        <h2 class="fw-bold">{{ today }}</h2>
+                        <small class="text-muted fw-bold text-uppercase">Completed</small>
+                        <h2 class="fw-bold">{{ completed_count }}</h2>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card stat-card p-3 border-start border-warning border-5">
-                        <small class="text-muted fw-bold">SYSTEM STATUS</small>
-                        <h2 class="fw-bold text-success">Online</h2>
+                        <small class="text-muted fw-bold text-uppercase">In Progress</small>
+                        <h2 class="fw-bold">{{ in_progress_count }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-3 border-start border-secondary border-5">
+                        <small class="text-muted fw-bold text-uppercase">Created</small>
+                        <h2 class="fw-bold">{{ created_count }}</h2>
                     </div>
                 </div>
             </div>
 
-            <!-- Reports Table -->
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold" style="color: #003366;">Recent Inspection Reports</h5>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-navy">Recent Inspection Activity</h5>
+                    <a href="{{ url_for('inspection_register') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
                 </div>
                 <div class="table-responsive p-3">
                     <table class="table table-hover align-middle">
@@ -84,6 +112,7 @@
                                 <th>QR ID</th>
                                 <th>Category</th>
                                 <th>Inspector</th>
+                                <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -95,12 +124,21 @@
                                 <td>{{ report.category }}</td>
                                 <td>{{ report.inspector_name }}</td>
                                 <td>
-                                    <a href="/view_report/{{ report.id }}" class="btn btn-sm btn-outline-primary">View Full Details</a>
+                                    {% if report.report_status == 'Completed' %}
+                                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Completed</span>
+                                    {% elif report.report_status == 'In Progress' %}
+                                    <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill">In Progress</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill border">Created</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/view_report/{{ report.id }}" class="btn btn-sm btn-outline-primary">View Report</a>
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">No reports found in the database.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">No recent inspection data found.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -110,6 +148,14 @@
         </main>
     </div>
 </div>
+
+<script>
+    function confirmLogout() {
+        if (confirm("Are you sure you want to logout?")) {
+            window.location.href = "{{ url_for('logout') }}";
+        }
+    }
+</script>
 
 </body>
 </html>
