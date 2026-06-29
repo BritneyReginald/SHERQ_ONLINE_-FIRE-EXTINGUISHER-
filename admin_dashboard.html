@@ -3,159 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Reginald SHERQ</title>
+    <title>Login | Reginald SHERQ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .sidebar { background-color: #003366; min-height: 100vh; color: white; padding-top: 20px; }
-        .nav-link { color: rgba(255,255,255,0.8); font-weight: 500; display: flex; align-items: center; }
-        .nav-link i { margin-right: 10px; }
-        .nav-link:hover, .nav-link.active { color: #99cc33; }
-        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; height: 100%; }
-        .stat-card:hover { transform: translateY(-5px); }
+        body {
+            background: linear-gradient(rgba(26, 54, 93, 0.9), rgba(26, 54, 93, 0.9)), 
+                        url('https://images.unsplash.com/photo-1582213706342-998897597f7e?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        /* Header Block */
+        .brand-header {
+            background-color: #1a365d;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .brand-text { font-weight: bold; font-size: 1.1rem; }
         .brand-green { color: #99cc33; }
-        .table thead { background-color: #003366; color: white; }
-        .text-navy { color: #003366; }
+        .sub-text { font-size: 0.6rem; letter-spacing: 1px; color: #cbd5e0; }
+
+        /* Input Styles */
+        .form-control { margin-bottom: 15px; border-radius: 6px; }
+
+        /* Main Sign In Button */
+        .btn-signin {
+            background-color: #1a365d;
+            color: white;
+            font-weight: 800;
+            width: 100%;
+            padding: 12px;
+            border-radius: 50px;
+            border: none;
+            margin-bottom: 15px;
+        }
+        .btn-signin:hover { background-color: #2c5282; color: white; }
+
+        /* Back to Home Link */
+        .back-link {
+            color: #1a365d;
+            font-size: 0.9rem;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        h2 { color: #1a365d; font-size: 1.2rem; font-weight: bold; margin-bottom: 1.5rem; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar shadow">
-            <div class="position-sticky text-center">
-                <h4 class="fw-bold mb-4">REGINALD<span class="brand-green">SHERQ</span></h4>
-                <ul class="nav flex-column text-start px-3">
-                    <li class="nav-item mb-2">
-                        <a class="nav-link active" href="{{ url_for('admin_dashboard') }}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="{{ url_for('register') }}">
-                            <i class="bi bi-archive"></i> Asset Register
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="{{ url_for('inspection_register') }}">
-                            <i class="bi bi-clipboard-check"></i> Inspection Register
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="/admin/alerts">
-                            <i class="bi bi-exclamation-triangle"></i> Alerts
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link" href="{{ url_for('employee_management') }}">
-                            <i class="bi bi-people"></i> Employee Management
-                        </a>
-                    </li>
-                    <hr style="border-color: rgba(255,255,255,0.1);">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link text-danger" onclick="confirmLogout()">
-                            <i class="bi bi-box-arrow-left"></i> Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="brand-text">REGINALD<span class="brand-green">SHERQ</span>SERVICES</div>
+            <div class="sub-text">SAFETY • HEALTH • ENVIRONMENT • RISK • QUALITY</div>
+        </div>
 
-        <main class="col-md-10 ms-sm-auto px-md-4 py-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2 text-navy fw-bold">Management Overview</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Print Overview
-                    </button>
-                </div>
-            </div>
+        <h2>SYSTEM LOGIN</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-danger text-center p-2">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-            <div class="row mb-4 g-3">
-                <div class="col-md-3">
-                    <div class="card stat-card p-3 border-start border-primary border-5">
-                        <small class="text-muted fw-bold text-uppercase">Total Inspections</small>
-                        <h2 class="fw-bold">{{ total }}</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card stat-card p-3 border-start border-success border-5">
-                        <small class="text-muted fw-bold text-uppercase">Completed</small>
-                        <h2 class="fw-bold">{{ completed_count }}</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card stat-card p-3 border-start border-warning border-5">
-                        <small class="text-muted fw-bold text-uppercase">In Progress</small>
-                        <h2 class="fw-bold">{{ in_progress_count }}</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card stat-card p-3 border-start border-secondary border-5">
-                        <small class="text-muted fw-bold text-uppercase">Created</small>
-                        <h2 class="fw-bold">{{ created_count }}</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-navy">Recent Inspection Activity</h5>
-                    <a href="{{ url_for('inspection_register') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
-                </div>
-                <div class="table-responsive p-3">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>QR ID</th>
-                                <th>Category</th>
-                                <th>Inspector</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for report in reports %}
-                            <tr>
-                                <td>{{ report.inspection_date }}</td>
-                                <td class="fw-bold">{{ report.qr_code_id }}</td>
-                                <td>{{ report.category }}</td>
-                                <td>{{ report.inspector_name }}</td>
-                                <td>
-                                    {% if report.report_status == 'Completed' %}
-                                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Completed</span>
-                                    {% elif report.report_status == 'In Progress' %}
-                                    <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill">In Progress</span>
-                                    {% else %}
-                                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill border">Created</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="/view_report/{{ report.id }}" class="btn btn-sm btn-outline-primary">View Report</a>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No recent inspection data found.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+        <form method="POST">
+            <input type="text" name="username" class="form-control" placeholder="Username" required>
+            <input type="password" name="password" class="form-control" placeholder="Password" required>
+            <button type="submit" class="btn btn-signin">SIGN IN</button>
+        </form>
+        
+        <a href="{% if request.args.get('next') %}{{ url_for('details', qr_code_id=request.args.get('next').split('/')[-1]) }}{% else %}/{% endif %}" class="back-link">Back to Home</a>
     </div>
-</div>
-
-<script>
-    function confirmLogout() {
-        if (confirm("Are you sure you want to logout?")) {
-            window.location.href = "{{ url_for('logout') }}";
-        }
-    }
-</script>
 
 </body>
 </html>
