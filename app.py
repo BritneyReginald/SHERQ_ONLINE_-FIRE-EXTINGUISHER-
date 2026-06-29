@@ -21,7 +21,7 @@ app.config['MAIL_PASSWORD'] = 'vkjtvipazvubycsl'  # Your verified Google App Pas
 mail = Mail(app)
 
 # Database Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:Simangele21%40@127.0.0.1:3306/SHERQ'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:Simangele21%40@localhost:5433/SHERQ'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 UPLOAD_FOLDER = 'static/uploads'
@@ -69,8 +69,9 @@ class InspectionReport(db.Model):
     category = db.Column(db.String(50))
     responses = db.Column(db.Text)
     report_status = db.Column(db.String(50), default='Created')
+    deleted_at = db.Column(db.Date, nullable=True)
 
-# --- NEW: EMPLOYEE MANAGEMENT SYSTEM SCHEMA ---
+# --- NEW: EMPLOYEE & USER MANAGEMENT SCHEMA ---
 class Employee(db.Model):
     __tablename__ = 'employees'
     id = db.Column(db.Integer, primary_key=True)
@@ -78,6 +79,13 @@ class Employee(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(100))
     role = db.Column(db.String(50), default='Inspector')
+
+class User(db.Model):
+    __tablename__ = 'users'
+    user_id = db.Column(db.Integer, primary_key=True)
+    employee_number = db.Column(db.String(50), db.ForeignKey('employees.employee_number'), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
 
 # --- HELPER FUNCTIONS ---
 def get_unit_and_category(qr_id):
@@ -383,9 +391,17 @@ def toggle_inactive(category, qr_id):
 def inspection_register():
     if not session.get('admin_logged_in'): 
         return redirect(url_for('login'))
-    all_inspections = InspectionReport.query.order_by(InspectionReport.inspection_date.desc()).all()
-    stats = {'total': InspectionReport.query.count(), 'completed': InspectionReport.query.filter_by(report_status='Completed').count(),
-             'in_progress': InspectionReport.query.filter_by(report_status='In Progress').count(), 'created': InspectionReport.query.filter_by(report_status='Created').count()}
+    
+    # We filter by deleted_at is None so only active items are shown
+    all_inspections = InspectionReport.query.filter(InspectionReport.deleted_at.is_(None)).order_by(InspectionReport.inspection_date.desc()).all()
+    
+    # We also update stats to count only non-deleted items
+    stats = {
+        'total': InspectionReport.query.filter(InspectionReport.deleted_at.is_(None)).count(), 
+        'completed': InspectionReport.query.filter_by(report_status='Completed', deleted_at=None).count(),
+        'in_progress': InspectionReport.query.filter_by(report_status='In Progress', deleted_at=None).count(), 
+        'created': InspectionReport.query.filter_by(report_status='Created', deleted_at=None).count()
+    }
     return render_template('inspection_register.html', inspections=all_inspections, stats=stats)
 
 @app.route('/admin/employees', methods=['GET', 'POST'])
@@ -435,18 +451,32 @@ def validate_inspector():
 def delete_inspection(report_id):
     if not session.get('admin_logged_in'):
         return redirect(url_for('login'))
-    db.session.delete(InspectionReport.query.get_or_404(report_id))
+    report = InspectionReport.query.get_or_404(report_id)
+    report.deleted_at = date.today() # Mark date for 30-day countdown
     db.session.commit()
-    flash("Deleted.", "warning")
+    flash("Report moved to Recycle Bin.", "warning")
     return redirect(url_for('inspection_register'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Capture the 'next' URL parameter if it exists (e.g., /questionnaire/EQ-001)
+    next_url = request.args.get('next')
+    
     if request.method == 'POST':
-        if request.form.get('username') == 'reginald' and request.form.get('password') == 'sherq':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.password_hash == password:
             session['admin_logged_in'] = True
-            return redirect(url_for('admin_dashboard'))
-    return render_template('login.html')
+            session['username'] = user.username
+            
+            # Redirect to the intended page (next_url) or fallback to dashboard
+            return redirect(next_url or url_for('admin_dashboard'))
+        else:
+            flash("Invalid username or password.", "danger")
+            
+    return render_template('log_html.html')
 
 app.add_url_rule('/admin/employees', endpoint='employee_management', view_func=employee_management)
 app.add_url_rule('/admin/register', endpoint='register', view_func=register)
@@ -502,7 +532,41 @@ def submit_inspection(qr_code_id):
     db.session.commit()
     return render_template('thank_you.html', unit=unit, category=category, unit_id=qr_code_id, inspector_name=request.form.get('inspector_name'), report_id=new_report.id)
 
+@app.route('/admin/recycle_bin')
+def recycle_bin():
+    if not session.get('admin_logged_in'): 
+        return redirect(url_for('login'))
+    
+    # 1. Cleanup: Permanently delete anything > 30 days old
+    threshold = date.today() - timedelta(days=30)
+    old_items = InspectionReport.query.filter(InspectionReport.deleted_at < threshold).all()
+    for item in old_items:
+        db.session.delete(item)
+    db.session.commit()
+
+    # 2. Display items that are in the bin
+    trashed = InspectionReport.query.filter(InspectionReport.deleted_at.isnot(None)).all()
+    return render_template('recycle_bin.html', trashed=trashed)
+
+@app.route('/restore_item/<int:report_id>', methods=['POST'])
+def restore_item(report_id):
+    if not session.get('admin_logged_in'): 
+        return redirect(url_for('login'))
+    report = InspectionReport.query.get_or_404(report_id)
+    report.deleted_at = None 
+    db.session.commit()
+    flash("Report restored successfully!", "success")
+    return redirect(url_for('recycle_bin'))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+       
+        
+
+    
+        
+
+    
+    
